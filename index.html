@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Matty's Diner</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        h1 {
+            color: #e63946;
+            text-align: center;
+            font-family: 'Arial', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .retro-badge {
+            background-color: #e63946;
+            color: white;
+            font-size: 12px;
+            padding: 3px 8px;
+            border-radius: 10px;
+            display: inline-block;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+        .controls {
+            background-color: #fff;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            margin: 20px 0;
+            border: 2px solid #1d3557;
+        }
+        .sound-controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .sound-control {
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+            background-color: #f1faee;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            border: 1px solid #a8dadc;
+        }
+        .sound-control.active {
+            background-color: #a8dadc;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        label {
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #1d3557;
+        }
+        input[type="range"] {
+            width: 100%;
+            margin-top: 5px;
+            height: 8px;
+        }
+        button {
+            background-color: #1d3557;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+            font-weight: bold;
+        }
+        button:hover {
+            background-color: #457b9d;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .main-controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+        .slider-value {
+            font-size: 0.8em;
+            text-align: center;
+            margin-top: 5px;
+            color: #457b9d;
+        }
+        .diner-image {
+            width: 100%;
+            height: 150px;
+            background-image: url('/api/placeholder/800/150');
+            background-size: cover;
+            background-position: center;
+            border-radius: 10px 10px 0 0;
+            position: relative;
+        }
+        .diner-image::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(rgba(0,0,0,0), rgba(0,0,0,0.3));
+            border-radius: 10px 10px 0 0;
+        }
+        .container {
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+            margin-bottom: 20px;
+        }
+        .description {
+            padding: 15px;
+            background-color: #1d3557;
+            color: white;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+    <h1>Matty's Diner</h1>
+    
+    <div class="controls">
+        <div class="sound-controls">
+            <div class="sound-control" id="dishes-control">
+                <label for="dishes-volume">Coffee Cups & Dishes</label>
+                <input type="range" id="dishes-volume" min="0" max="100" value="0">
+                <div class="slider-value">0%</div>
+            </div>
+            
+            <div class="sound-control" id="grill-control">
+                <label for="grill-volume">Grill & Kitchen</label>
+                <input type="range" id="grill-volume" min="0" max="100" value="0">
+                <div class="slider-value">0%</div>
+            </div>
+            
+            <div class="sound-control" id="chatter-control">
+                <label for="chatter-volume">Customer Chatter</label>
+                <input type="range" id="chatter-volume" min="0" max="100" value="0">
+                <div class="slider-value">0%</div>
+            </div>
+            
+            <div class="sound-control" id="jukebox-control">
+                <label for="jukebox-volume">Jukebox Music</label>
+                <input type="range" id="jukebox-volume" min="0" max="100" value="0">
+                <div class="slider-value">0%</div>
+            </div>
+            
+            <div class="sound-control" id="doorbells-control">
+                <label for="doorbells-volume">Door Bells & Cash Register</label>
+                <input type="range" id="doorbells-volume" min="0" max="100" value="0">
+                <div class="slider-value">0%</div>
+            </div>
+            
+            <div class="sound-control" id="outside-control">
+                <label for="outside-volume">Passing Cars</label>
+                <input type="range" id="outside-volume" min="0" max="100" value="0">
+                <div class="slider-value">0%</div>
+            </div>
+        </div>
+        
+        <div class="main-controls">
+            <button id="start-button">Start Diner Ambience</button>
+            <button id="stop-button" disabled>Stop Ambience</button>
+        </div>
+    </div>
+
+    <script>
+        // Audio context and master gain
+        let audioContext;
+        let masterGain;
+        
+        // Sound generators
+        const sounds = {
+            dishes: { node: null, gain: null, interval: null, playing: false },
+            grill: { node: null, gain: null, playing: false },
+            chatter: { node: null, gain: null, playing: false },
+            jukebox: { node: null, gain: null, playing: false },
+            doorbells: { gain: null, playing: false },
+            outside: { node: null, gain: null, playing: false }
+        };
+        
+        // UI elements
+        const startButton = document.getElementById('start-button');
+        const stopButton = document.getElementById('stop-button');
+        const volumeSliders = {
+            dishes: document.getElementById('dishes-volume'),
+            grill: document.getElementById('grill-volume'),
+            chatter: document.getElementById('chatter-volume'),
+            jukebox: document.getElementById('jukebox-volume'),
+            doorbells: document.getElementById('doorbells-volume'),
+            outside: document.getElementById('outside-volume')
+        };
+        
+        // Initialize the audio system
+        function initAudio() {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            masterGain = audioContext.createGain();
+            masterGain.gain.value = 1.0;
+            masterGain.connect(audioContext.destination);
+            
+            // Setup each sound generator
+            setupDishesSound();
+            setupGrillSound();
+            setupChatterSound();
+            setupJukeboxSound();
+            setupDoorbellsSound();
+            setupOutsideSound();
+            
+            // Set up UI controls
+            setupUIControls();
+        }
+        
+        // Setup dishes sound - coffee cups and silverware
+        function setupDishesSound() {
+            const sound = sounds.dishes;
+            sound.gain = audioContext.createGain();
+            sound.gain.gain.value = 0;
+            sound.gain.connect(masterGain);
+        }
+        
+        // Generate a random dishes sound
+        function playRandomDishesSound() {
+            if (!sounds.dishes.playing) return;
+            
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            // Randomly choose between a few sound types
+            const soundType = Math.floor(Math.random() * 5);
+            
+            if (soundType === 0) {
+                // Coffee cup on saucer
+                oscillator.type = 'triangle';
+                oscillator.frequency.value = 800 + Math.random() * 400;
+                gainNode.gain.value = 0.1 + Math.random() * 0.05;
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(sounds.dishes.gain);
+                
+                oscillator.start();
+                
+                // Quick decay
+                gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.1 + Math.random() * 0.1);
+                oscillator.stop(audioContext.currentTime + 0.3);
+            } else if (soundType === 1) {
+                // Spoon stirring coffee
+                oscillator.type = 'sine';
+                oscillator.frequency.value = 600 + Math.random() * 200;
+                gainNode.gain.value = 0.05 + Math.random() * 0.03;
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(sounds.dishes.gain);
+                
+                oscillator.start();
+                
+                // Stirring sound
+                const now = audioContext.currentTime;
+                for (let i = 0; i < 5; i++) {
+                    gainNode.gain.setValueAtTime(0.05 * Math.random(), now + i * 0.05);
+                }
+                gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+                oscillator.stop(audioContext.currentTime + 0.35);
+            } else if (soundType === 2) {
+                // Plate sound
+                oscillator.type = 'sine';
+                oscillator.frequency.value = 500 + Math.random() * 200;
+                gainNode.gain.value = 0.15 + Math.random() * 0.05;
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(sounds.dishes.gain);
+                
+                oscillator.start();
+                
+                // Medium decay
+                gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.2 + Math.random() * 0.2);
+                oscillator.stop(audioContext.currentTime + 0.4);
+            } else if (soundType === 3) {
+                // Glass/mug sound
+                oscillator.type = 'sine';
+                oscillator.frequency.value = 1200 + Math.random() * 600;
+                gainNode.gain.value = 0.07 + Math.random() * 0.04;
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(sounds.dishes.gain);
+                
+                oscillator.start();
+                
+                // Medium-long decay
+                gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.3 + Math.random() * 0.2);
+                oscillator.stop(audioContext.currentTime + 0.6);
+            } else {
+                // Silverware on plate
+                const silverware = audioContext.createOscillator();
+                silverware.type = 'square';
+                silverware.frequency.value = 1500 + Math.random() * 500;
+                
+                const silverwareGain = audioContext.createGain();
+                silverwareGain.gain.value = 0.02 + Math.random() * 0.02;
+                
+                const filter = audioContext.createBiquadFilter();
+                filter.type = 'highpass';
+                filter.frequency.value = 1000;
+                
+                silverware.connect(silverwareGain);
+                silverwareGain.connect(filter);
+                filter.connect(sounds.dishes.gain);
+                
+                silverware.start();
+                
+                // Very quick decay
+                silverwareGain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.08);
+                silverware.stop(audioContext.currentTime + 0.1);
+            }
+            
+            // Schedule next sound
+            setTimeout(playRandomDishesSound, 1500 + Math.random() * 3000);
+        }
+        
+        // Setup grill sound - cooking and kitchen noises
+        function setupGrillSound() {
+            const sound = sounds.grill;
+            sound.node = audioContext.createBufferSource();
+            sound.gain = audioContext.createGain();
+            sound.gain.gain.value = 0;
+            
+            // Create sizzling noise
+            const bufferSize = 2 * audioContext.sampleRate;
+            const noiseBuffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+            const output = noiseBuffer.getChannelData(0);
+            
+            for (let i = 0; i < bufferSize; i++) {
+                output[i] = Math.random() * 2 - 1;
+            }
+            
+            sound.node.buffer = noiseBuffer;
+            sound.node.loop = true;
+            
+            // Create grill-like filter (sizzling)
+            const grillFilter = audioContext.createBiquadFilter();
+            grillFilter.type = 'bandpass';
+            grillFilter.frequency.value = 4000;
+            grillFilter.Q.value = 1;
+            
+            // Add crackling variations
+            const lfo = audioContext.createOscillator();
+            lfo.frequency.value = 4;
+            const lfoGain = audioContext.createGain();
+            lfoGain.gain.value = 800;
+            lfo.connect(lfoGain);
+            lfoGain.connect(grillFilter.frequency);
+            lfo.start();
+            
+            sound.node.connect(grillFilter);
+            grillFilter.connect(sound.gain);
+            sound.gain.connect(masterGain);
+            
+            // Add occasional kitchen commands
+            sound.playKitchenSounds = function() {
+                if (!sounds.grill.playing) return;
+                
+                // Only sometimes play the sound
+                if (Math.random() > 0.3) {
+                    setTimeout(() => sound.playKitchenSounds(), 5000 + Math.random() * 10000);
+                    return;
+                }
+                
+                // Create a "order up" bell sound
+                const bell = audioContext.createOscillator();
+                bell.type = 'sine';
+                bell.frequency.value = 1046.5; // C6
+                
+                const bellGain = audioContext.createGain();
+                bellGain.gain.value = 0;
+                
+                bell.connect(bellGain);
+                bellGain.connect(sound.gain);
+                
+                bell.start();
+                bellGain.gain.setValueAtTime(0, audioContext.currentTime);
+                bellGain.gain.linearRampToValueAtTime(0.15, audioContext.currentTime + 0.01);
+                bellGain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.3);
+                bell.stop(audioContext.currentTime + 0.31);
+                
+                // Schedule next sound
+                setTimeout(() => sound.playKitchenSounds(), 5000 + Math.random() * 10000);
+            };
+        }
+        
+        // Setup chatter sound - diner conversation
+        function setupChatterSound() {
+            const sound = sounds.chatter;
+            sound.node = audioContext.createBufferSource();
+            sound.gain = audioContext.createGain();
+            sound.gain.gain.value = 0;
+            
+            // Create noise for the chatter
+            const bufferSize = 2 * audioContext.sampleRate;
+            const noiseBuffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+            const output = noiseBuffer.getChannelData(0);
+            
+            for (let i = 0; i < bufferSize; i++) {
+                output[i] = Math.random() * 2 - 1;
+            }
+            
+            sound.node.buffer = noiseBuffer;
+            sound.node.loop = true;
+            
+            // Create filter chain for realistic chatter
+            const lowpass = audioContext.createBiquadFilter();
+            lowpass.type = 'lowpass';
+            lowpass.frequency.value = 1000;
+            
+            const bandpass = audioContext.createBiquadFilter();
+            bandpass.type = 'bandpass';
+            bandpass.frequency.value = 500;
+            bandpass.Q.value = 0.5;
+            
+            // Add variations
+            const lfo = audioContext.createOscillator();
+            lfo.frequency.value = 0.1;
+            const lfoGain = audioContext.createGain();
+            lfoGain.gain.value = 200;
+            lfo.connect(lfoGain);
+            lfoGain.connect(bandpass.frequency);
+            lfo.start();
+            
+            // Connect the chain
+            sound.node.connect(bandpass);
+            bandpass.connect(lowpass);
+            lowpass.connect(sound.gain);
+            sound.gain.connect(masterGain);
+            
+            // Add occasional laughter
+            sound.playLaughter = function() {
+                if (!sounds.chatter.playing) return;
+                
+                // Only sometimes play laughter
+                if (Math.random() > 0.2) {
+                    setTimeout(() => sound.playLaughter(), 8000 + Math.random() * 15000);
+                    return;
+                }
+                
+                // Create a filtered noise burst for laughter
+                const laughSource = audioContext.createBufferSource();
+                const laughBuffer = audioContext.createBuffer(1, audioContext.sampleRate * 0.5, audioContext.sampleRate);
+                const laughData = laughBuffer.getChannelData(0);
+                
+                for (let i = 0; i < laughBuffer.length; i++) {
+                    laughData[i] = Math.random() * 2 - 1;
+                }
+                
+                laughSource.buffer = laughBuffer;
+                
+                const laughFilter = audioContext.createBiquadFilter();
+                laughFilter.type = 'bandpass';
+                laughFilter.frequency.value = 800;
+                laughFilter.Q.value = 0.5;
+                
+                const laughGain = audioContext.createGain();
+                laughGain.gain.value = 0;
+                
+                laughSource.connect(laughFilter);
+                laughFilter.connect(laughGain);
+                laughGain.connect(sound.gain);
+                
+                laughSource.start();
+                laughGain.gain.setValueAtTime(0, audioContext.currentTime);
+                laughGain.gain.linearRampToValueAtTime(0.1, audioContext.currentTime + 0.05);
+                
+                // Create laughing pattern
+                const now = audioContext.currentTime;
+                for (let i = 0; i < 5; i++) {
+                    laughGain.gain.exponentialRampToValueAtTime(0.1, now + (i * 0.1));
+                    laughGain.gain.exponentialRampToValueAtTime(0.03, now + (i * 0.1) + 0.05);
+                }
+                laughGain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+                
+                // Schedule next laughter
+                setTimeout(() => sound.playLaughter(), 8000 + Math.random() * 15000);
+            };
+        }
+        
+        // TODO: replace this with Spotify API integration
+        // Setup jukebox sound - 50s style music
+        function setupJukeboxSound() {
+            const sound = sounds.jukebox;
+            sound.gain = audioContext.createGain();
+            sound.gain.gain.value = 0;
+            sound.gain.connect(masterGain);
+            
+            // Create a filter to make the jukebox sound distant
+            const jukeboxFilter = audioContext.createBiquadFilter();
+            jukeboxFilter.type = 'lowpass';
+            jukeboxFilter.frequency.value = 1000;
+            jukeboxFilter.Q.value = 0.7;
+            
+            jukeboxFilter.connect(sound.gain);
+            
+            // We'll create a simple melody generator
+            sound.playRockNRoll = function() {
+                if (!sounds.jukebox.playing) return;
+                
+                // Create the instruments
+                const bassDrum = audioContext.createOscillator();
+                bassDrum.type = 'sine';
+                bassDrum.frequency.value = 60;
+                
+                const bassGain = audioContext.createGain();
+                bassGain.gain.value = 0;
+                
+                bassDrum.connect(bassGain);
+                bassGain.connect(jukeboxFilter);
+                
+                // Start the drum beat
+                bassDrum.start();
+                
+                // Create a drum pattern (50s rock style)
+                const now = audioContext.currentTime;
+                const tempo = 0.25; // quarter note
+                
+                for (let i = 0; i < 16; i++) {
+                    // Accents on 1 and 3
+                    if (i % 4 === 0 || i % 4 === 2) {
+                        bassGain.gain.setValueAtTime(0.15, now + i * tempo);
+                        bassGain.gain.exponentialRampToValueAtTime(0.001, now + i * tempo + 0.1);
+                    }
+                }
+                
+                bassDrum.stop(now + 16 * tempo);
+                
+                // Create a simple Walking Bass line
+                const notes = [110, 146.83, 164.81, 174.61, 196, 220]; // A2, D3, E3, F3, G3, A3
+                
+                for (let i = 0; i < 8; i++) {
+                    const bass = audioContext.createOscillator();
+                    bass.type = 'triangle';
+                    
+                    // Walking bass pattern
+                    let noteIndex;
+                    if (i % 4 === 0) noteIndex = 0; // A
+                    else if (i % 4 === 1) noteIndex = 1; // D
+                    else if (i % 4 === 2) noteIndex = 4; // G
+                    else noteIndex = 5; // A
+                    
+                    bass.frequency.value = notes[noteIndex];
+                    
+                    const bassNoteGain = audioContext.createGain();
+                    bassNoteGain.gain.value = 0;
+                    
+                    bass.connect(bassNoteGain);
+                    bassNoteGain.connect(jukeboxFilter);
+                    
+                    bass.start(now + i * tempo * 2);
+                    bassNoteGain.gain.setValueAtTime(0, now + i * tempo * 2);
+                    bassNoteGain.gain.linearRampToValueAtTime(0.1, now + i * tempo * 2 + 0.1);
+                    bassNoteGain.gain.exponentialRampToValueAtTime(0.001, now + i * tempo * 2 + 1.8);
+                    
+                    bass.stop(now + i * tempo * 2 + 2);
+                }
+                
+                // Schedule next music segment
+                setTimeout(() => sound.playRockNRoll(), 3800); // Slightly under 4 seconds to avoid gaps
+            };
+        }
+        
+        // Setup doorbell and cash register sounds
+        function setupDoorbellsSound() {
+            const sound = sounds.doorbells;
+            sound.gain = audioContext.createGain();
+            sound.gain.gain.value = 0;
+            sound.gain.connect(masterGain);
+            
+            // Add occasional door bell and cash register sounds
+            sound.playDoorBellSound = function() {
+                if (!sounds.doorbells.playing) return;
+                
+                // Only play sound sometimes
+                if (Math.random() > 0.4) {
+                    setTimeout(() => sound.playDoorBellSound(), 6000 + Math.random() * 15000);
+                    return;
+                }
+                
+                // Choose between door bell and cash register
+                if (Math.random() > 0.5) {
+                    // Door bell (ding-dong)
+                    const bell1 = audioContext.createOscillator();
+                    bell1.type = 'sine';
+                    bell1.frequency.value = 880; // A5
+                    
+                    const bell2 = audioContext.createOscillator();
+                    bell2.type = 'sine';
+                    bell2.frequency.value = 659.25; // E5
+                    
+                    const bellGain = audioContext.createGain();
+                    bellGain.gain.value = 0;
+                    
+                    bell1.connect(bellGain);
+                    bell2.connect(bellGain);
+                    bellGain.connect(sound.gain);
+                    
+                    // Play ding-dong
+                    const now = audioContext.currentTime;
+                    
+                    // Ding
+                    bell1.start(now);
+                    bellGain.gain.setValueAtTime(0, now);
+                    bellGain.gain.linearRampToValueAtTime(0.1, now + 0.01);
+                    bellGain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+                    bell1.stop(now + 0.31);
+                    
+                    // Dong
+                    bell2.start(now + 0.3);
+                    bellGain.gain.setValueAtTime(0, now + 0.3);
+                    bellGain.gain.linearRampToValueAtTime(0.1, now + 0.31);
+                    bellGain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+                    bell2.stop(now + 0.61);
+                } else {
+                    // Cash register "cha-ching"
+                    const slidingSound = audioContext.createOscillator();
+                    slidingSound.type = 'sawtooth';
+                    slidingSound.frequency.value = 2000;
+                    
+                    const slidingFilter = audioContext.createBiquadFilter();
+                    slidingFilter.type = 'bandpass';
+                    slidingFilter.frequency.value = 2000;
+                    slidingFilter.Q.value = 5;
+                    
+                    const slidingGain = audioContext.createGain();
+                    slidingGain.gain.value = 0;
+                    
+                    slidingSound.connect(slidingFilter);
+                    slidingFilter.connect(slidingGain);
+                    slidingGain.connect(sound.gain);
+                    
+                    const bellSound = audioContext.createOscillator();
+                    bellSound.type = 'triangle';
+                    bellSound.frequency.value = 3000;
+                    
+                    const bellGain = audioContext.createGain();
+                    bellGain.gain.value = 0;
+                    
+                    bellSound.connect(bellGain);
+                    bellGain.connect(sound.gain);
+                    
+                    // Play cash register sound
+                    const now = audioContext.currentTime;
+                    
+                    // Sliding drawer sound
+                    slidingSound.start(now);
+                    slidingGain.gain.setValueAtTime(0, now);
+                    slidingGain.gain.linearRampToValueAtTime(0.05, now + 0.05);
+                    slidingFilter.frequency.setValueAtTime(2000, now);
+                    slidingFilter.frequency.linearRampToValueAtTime(300, now + 0.2);
+                    slidingGain.gain.linearRampToValueAtTime(0, now + 0.2);
+                    slidingSound.stop(now + 0.21);
+                    
+                    // Bell ding
+                    bellSound.start(now + 0.15);
+                    bellGain.gain.setValueAtTime(0, now + 0.15);
+                    bellGain.gain.linearRampToValueAtTime(0.1, now + 0.16);
+                    bellGain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+                    bellSound.stop(now + 0.41);
+                }
+                
+                // Schedule next sound
+                setTimeout(() => sound.playDoorBellSound(), 6000 + Math.random() * 15000);
+            };
+        }
+        
+        // Setup outside passing car sounds
+        function setupOutsideSound() {
+            const sound = sounds.outside;
+            sound.gain = audioContext.createGain();
+            sound.gain.gain.value = 0;
+            sound.gain.connect(masterGain);
+            
+            // Add distant traffic and car passing sounds
+            sound.playCarSound = function() {
+                if (!sounds.outside.playing) return;
+                
+                // Only play sound sometimes
+                if (Math.random() > 0.3) {
+                    setTimeout(() => sound.playCarSound(), 8000 + Math.random() * 15000);
+                    return;
+                }
+                
+                // Create the car passing sound (filtered noise with doppler effect)
+                const carNoise = audioContext.createBufferSource();
+                const carBuffer = audioContext.createBuffer(1, audioContext.sampleRate * 3, audioContext.sampleRate);
+                const carData = carBuffer.getChannelData(0);
+                
+                for (let i = 0; i < carBuffer.length; i++) {
+                    carData[i] = Math.random() * 2 - 1;
+                }
+                
+                carNoise.buffer = carBuffer;
+                
+                // Create the car engine filter
+                const engineFilter = audioContext.createBiquadFilter();
+                engineFilter.type = 'bandpass';
+                engineFilter.frequency.value = 100;
+                engineFilter.Q.value = 3;
+                
+                const carGain = audioContext.createGain();
+                carGain.gain.value = 0;
+                
+                carNoise.connect(engineFilter);
+                engineFilter.connect(carGain);
+                carGain.connect(sound.gain);
+                
+                // Play car passing with doppler effect
+                const now = audioContext.currentTime;
+                
+                carNoise.start(now);
+                
+                // Increase volume as car approaches
+                carGain.gain.setValueAtTime(0.001, now);
+                carGain.gain.exponentialRampToValueAtTime(0.15, now + 1);
+                
+                // Doppler effect - shift frequency down as car passes
+                engineFilter.frequency.setValueAtTime(80, now);
+                engineFilter.frequency.exponentialRampToValueAtTime(130, now + 1); // Approaching (pitch rises)
+                engineFilter.frequency.exponentialRampToValueAtTime(60, now + 2); // Departing (pitch lowers)
+                
+                // Fade out as car leaves
+                carGain.gain.exponentialRampToValueAtTime(0.001, now + 2);
+                
+                carNoise.stop(now + 2.1);
+                
+                // Schedule next car sound
+                setTimeout(() => sound.playCarSound(), 8000 + Math.random() * 15000);
+            };
+        }
+        
+        // Start all sound generation
+        function startSounds() {
+            if (!audioContext) {
+                initAudio();
+            }
+            
+            if (audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
+            
+            // Start each sound source
+            if (!sounds.dishes.playing) {
+                sounds.dishes.playing = true;
+                playRandomDishesSound();
+            }
+            
+            if (!sounds.grill.playing) {
+                sounds.grill.playing = true;
+                sounds.grill.node.start();
+                sounds.grill.playKitchenSounds();
+            }
+            
+            if (!sounds.chatter.playing) {
+                sounds.chatter.playing = true;
+                sounds.chatter.node.start();
+                sounds.chatter.playLaughter();
+            }
+            
+            if (!sounds.jukebox.playing) {
+                sounds.jukebox.playing = true;
+                sounds.jukebox.playRockNRoll();
+            }
+            
+            if (!sounds.doorbells.playing) {
+                sounds.doorbells.playing = true;
+                sounds.doorbells.playDoorBellSound();
+            }
+            
+            if (!sounds.outside.playing) {
+                sounds.outside.playing = true;
+                sounds.outside.playCarSound();
+            }
+            
+            // Update UI
+            startButton.disabled = true;
+            stopButton.disabled = false;
+            
+            document.querySelectorAll('.sound-control').forEach(control => {
+                control.classList.add('active');
+            });
+        }
+        
+        // Stop all sound generation
+        function stopSounds() {
+            // Stop and cleanup each sound source
+            sounds.dishes.playing = false;
+            
+            if (sounds.grill.node) {
+                sounds.grill.node.stop();
+                sounds.grill.playing = false;
+            }
+            
+            if (sounds.chatter.node) {
+                sounds.chatter.node.stop();
+                sounds.chatter.playing = false;
+            }
+            
+            sounds.jukebox.playing = false;
+            sounds.doorbells.playing = false;
+            sounds.outside.playing = false;
+            
+            // Reset for next start
+            setupDishesSound();
+            setupGrillSound();
+            setupChatterSound();
+            setupJukeboxSound();
+            setupDoorbellsSound();
+            setupOutsideSound();
+            
+            // Update UI
+            startButton.disabled = false;
+            stopButton.disabled = true;
+            
+            document.querySelectorAll('.sound-control').forEach(control => {
+                control.classList.remove('active');
+            });
+        }
+        
+        // Setup the UI controls
+        function setupUIControls() {
+            // Start button
+            startButton.addEventListener('click', startSounds);
+            
+            // Stop button
+            stopButton.addEventListener('click', stopSounds);
+            
+            // Volume sliders
+            for (const [sound, slider] of Object.entries(volumeSliders)) {
+                const valueDisplay = slider.nextElementSibling;
+                
+                slider.addEventListener('input', () => {
+                    const value = slider.value;
+                    valueDisplay.textContent = `${value}%`;
+                    
+                    // Update the gain for this sound
+                    if (sounds[sound].gain) {
+                        sounds[sound].gain.gain.value = value / 100 * 0.5; // Scale to a reasonable volume
+                    }
+                    
+                    // Highlight active controls
+                    const control = document.getElementById(`${sound}-control`);
+                    if (value > 0) {
+                        control.classList.add('active');
+                    } else {
+                        control.classList.remove('active');
+                    }
+                });
+            }
+        }
+        
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            // Create initial UI state
+            for (const [sound, slider] of Object.entries(volumeSliders)) {
+                const valueDisplay = slider.nextElementSibling;
+                valueDisplay.textContent = `${slider.value}%`;
+            }
+            
+            // Add button listener
+            startButton.addEventListener('click', () => {
+                if (!audioContext) {
+                    initAudio();
+                }
+                startSounds();
+            });
+        });
+    </script>
+</body>
+</html>
