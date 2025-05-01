@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Matty's Diner</title>
+    <title>American Diner Ambient Sounds with Spotify</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -77,6 +77,7 @@
             font-size: 16px;
             transition: background-color 0.3s ease;
             font-weight: bold;
+            margin: 5px;
         }
         button:hover {
             background-color: #457b9d;
@@ -89,6 +90,7 @@
             display: flex;
             justify-content: center;
             gap: 15px;
+            flex-wrap: wrap;
         }
         .slider-value {
             font-size: 0.8em;
@@ -128,10 +130,100 @@
             font-size: 14px;
             line-height: 1.5;
         }
+        .spotify-section {
+            background-color: #1DB954;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            color: white;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .spotify-logo {
+            display: block;
+            width: 80px;
+            margin: 0 auto 15px auto;
+        }
+        .spotify-container {
+            background-color: white;
+            color: #333;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .track-info {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .track-artwork {
+            width: 60px;
+            height: 60px;
+            background-color: #eee;
+            margin-right: 15px;
+            border-radius: 5px;
+        }
+        .track-details {
+            flex-grow: 1;
+        }
+        .track-name {
+            font-weight: bold;
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+        .track-artist {
+            font-size: 14px;
+            color: #666;
+        }
+        .player-controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 15px 0;
+        }
+        .spotify-auth {
+            text-align: center;
+            padding: 15px;
+        }
+        .spotify-btn {
+            background-color: #1DB954;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 30px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .spotify-btn:hover {
+            background-color: #1ed760;
+        }
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: #1d3557;
+            color: white;
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            transform: translateX(120%);
+            transition: transform 0.3s ease;
+            max-width: 300px;
+        }
+        .notification.show {
+            transform: translateX(0);
+        }
     </style>
 </head>
 <body>
-    <h1>Matty's Diner</h1>
+    <div class="container">
+        <div class="diner-image"></div>
+        <div class="description">
+            Experience the nostalgic sounds of a classic American diner - from the clinking of coffee cups and the sizzle of the grill to the background chatter and the occasional ding of the order bell. Now with Spotify integration for the perfect soundtrack!
+        </div>
+    </div>
+    
+    <h1>American Diner Sounds <span class="retro-badge">50's STYLE</span></h1>
     
     <div class="controls">
         <div class="sound-controls">
@@ -153,12 +245,6 @@
                 <div class="slider-value">0%</div>
             </div>
             
-            <div class="sound-control" id="jukebox-control">
-                <label for="jukebox-volume">Jukebox Music</label>
-                <input type="range" id="jukebox-volume" min="0" max="100" value="0">
-                <div class="slider-value">0%</div>
-            </div>
-            
             <div class="sound-control" id="doorbells-control">
                 <label for="doorbells-volume">Door Bells & Cash Register</label>
                 <input type="range" id="doorbells-volume" min="0" max="100" value="0">
@@ -177,7 +263,51 @@
             <button id="stop-button" disabled>Stop Ambience</button>
         </div>
     </div>
+    
+    <div class="spotify-section" id="spotify-section">
+        <img src="/api/placeholder/80/80" alt="Spotify Logo" class="spotify-logo">
+        <h2 style="text-align: center; margin-top: 0;">Spotify Integration</h2>
+        
+        <div id="spotify-login" class="spotify-auth">
+            <p>Connect your Spotify Premium account to add the perfect soundtrack to your diner ambience.</p>
+            <button id="auth-button" class="spotify-btn">Connect Spotify</button>
+        </div>
+        
+        <div id="spotify-player" class="spotify-container" style="display: none;">
+            <div class="track-info">
+                <div class="track-artwork" id="track-artwork"></div>
+                <div class="track-details">
+                    <div class="track-name" id="track-name">Not Playing</div>
+                    <div class="track-artist" id="track-artist"></div>
+                </div>
+            </div>
+            
+            <input type="range" id="spotify-volume" min="0" max="100" value="50" style="width: 100%;">
+            <div style="text-align: center; margin-top: 5px;">Volume: <span id="spotify-volume-value">50%</span></div>
+            
+            <div class="player-controls">
+                <button id="prev-button">Previous</button>
+                <button id="play-button">Play</button>
+                <button id="pause-button">Pause</button>
+                <button id="next-button">Next</button>
+            </div>
+            
+            <div style="margin-top: 15px;">
+                <p style="margin-bottom: 5px;">Search for tracks or play your favorites:</p>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="search-input" style="flex-grow: 1; padding: 8px; border-radius: 5px; border: 1px solid #ddd;" placeholder="Search for a song...">
+                    <button id="search-button">Search</button>
+                </div>
+                <div id="search-results" style="margin-top: 10px; max-height: 200px; overflow-y: auto;"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="notification" id="notification">Notification message</div>
 
+    <!-- Spotify Web Playback SDK -->
+    <script src="https://sdk.scdn.co/spotify-player.js"></script>
+    
     <script>
         // Audio context and master gain
         let audioContext;
@@ -188,7 +318,6 @@
             dishes: { node: null, gain: null, interval: null, playing: false },
             grill: { node: null, gain: null, playing: false },
             chatter: { node: null, gain: null, playing: false },
-            jukebox: { node: null, gain: null, playing: false },
             doorbells: { gain: null, playing: false },
             outside: { node: null, gain: null, playing: false }
         };
@@ -200,10 +329,32 @@
             dishes: document.getElementById('dishes-volume'),
             grill: document.getElementById('grill-volume'),
             chatter: document.getElementById('chatter-volume'),
-            jukebox: document.getElementById('jukebox-volume'),
             doorbells: document.getElementById('doorbells-volume'),
             outside: document.getElementById('outside-volume')
         };
+        
+        // Spotify elements
+        const authButton = document.getElementById('auth-button');
+        const spotifyLogin = document.getElementById('spotify-login');
+        const spotifyPlayer = document.getElementById('spotify-player');
+        const playButton = document.getElementById('play-button');
+        const pauseButton = document.getElementById('pause-button');
+        const prevButton = document.getElementById('prev-button');
+        const nextButton = document.getElementById('next-button');
+        const spotifyVolume = document.getElementById('spotify-volume');
+        const spotifyVolumeValue = document.getElementById('spotify-volume-value');
+        const searchInput = document.getElementById('search-input');
+        const searchButton = document.getElementById('search-button');
+        const searchResults = document.getElementById('search-results');
+        const trackName = document.getElementById('track-name');
+        const trackArtist = document.getElementById('track-artist');
+        const trackArtwork = document.getElementById('track-artwork');
+        const notification = document.getElementById('notification');
+        
+        // Spotify Web Player variables
+        let player;
+        let deviceId;
+        let accessToken = '';
         
         // Initialize the audio system
         function initAudio() {
@@ -216,7 +367,6 @@
             setupDishesSound();
             setupGrillSound();
             setupChatterSound();
-            setupJukeboxSound();
             setupDoorbellsSound();
             setupOutsideSound();
             
@@ -494,89 +644,6 @@
             };
         }
         
-        // TODO: replace this with Spotify API integration
-        // Setup jukebox sound - 50s style music
-        function setupJukeboxSound() {
-            const sound = sounds.jukebox;
-            sound.gain = audioContext.createGain();
-            sound.gain.gain.value = 0;
-            sound.gain.connect(masterGain);
-            
-            // Create a filter to make the jukebox sound distant
-            const jukeboxFilter = audioContext.createBiquadFilter();
-            jukeboxFilter.type = 'lowpass';
-            jukeboxFilter.frequency.value = 1000;
-            jukeboxFilter.Q.value = 0.7;
-            
-            jukeboxFilter.connect(sound.gain);
-            
-            // We'll create a simple melody generator
-            sound.playRockNRoll = function() {
-                if (!sounds.jukebox.playing) return;
-                
-                // Create the instruments
-                const bassDrum = audioContext.createOscillator();
-                bassDrum.type = 'sine';
-                bassDrum.frequency.value = 60;
-                
-                const bassGain = audioContext.createGain();
-                bassGain.gain.value = 0;
-                
-                bassDrum.connect(bassGain);
-                bassGain.connect(jukeboxFilter);
-                
-                // Start the drum beat
-                bassDrum.start();
-                
-                // Create a drum pattern (50s rock style)
-                const now = audioContext.currentTime;
-                const tempo = 0.25; // quarter note
-                
-                for (let i = 0; i < 16; i++) {
-                    // Accents on 1 and 3
-                    if (i % 4 === 0 || i % 4 === 2) {
-                        bassGain.gain.setValueAtTime(0.15, now + i * tempo);
-                        bassGain.gain.exponentialRampToValueAtTime(0.001, now + i * tempo + 0.1);
-                    }
-                }
-                
-                bassDrum.stop(now + 16 * tempo);
-                
-                // Create a simple Walking Bass line
-                const notes = [110, 146.83, 164.81, 174.61, 196, 220]; // A2, D3, E3, F3, G3, A3
-                
-                for (let i = 0; i < 8; i++) {
-                    const bass = audioContext.createOscillator();
-                    bass.type = 'triangle';
-                    
-                    // Walking bass pattern
-                    let noteIndex;
-                    if (i % 4 === 0) noteIndex = 0; // A
-                    else if (i % 4 === 1) noteIndex = 1; // D
-                    else if (i % 4 === 2) noteIndex = 4; // G
-                    else noteIndex = 5; // A
-                    
-                    bass.frequency.value = notes[noteIndex];
-                    
-                    const bassNoteGain = audioContext.createGain();
-                    bassNoteGain.gain.value = 0;
-                    
-                    bass.connect(bassNoteGain);
-                    bassNoteGain.connect(jukeboxFilter);
-                    
-                    bass.start(now + i * tempo * 2);
-                    bassNoteGain.gain.setValueAtTime(0, now + i * tempo * 2);
-                    bassNoteGain.gain.linearRampToValueAtTime(0.1, now + i * tempo * 2 + 0.1);
-                    bassNoteGain.gain.exponentialRampToValueAtTime(0.001, now + i * tempo * 2 + 1.8);
-                    
-                    bass.stop(now + i * tempo * 2 + 2);
-                }
-                
-                // Schedule next music segment
-                setTimeout(() => sound.playRockNRoll(), 3800); // Slightly under 4 seconds to avoid gaps
-            };
-        }
-        
         // Setup doorbell and cash register sounds
         function setupDoorbellsSound() {
             const sound = sounds.doorbells;
@@ -774,11 +841,6 @@
                 sounds.chatter.playLaughter();
             }
             
-            if (!sounds.jukebox.playing) {
-                sounds.jukebox.playing = true;
-                sounds.jukebox.playRockNRoll();
-            }
-            
             if (!sounds.doorbells.playing) {
                 sounds.doorbells.playing = true;
                 sounds.doorbells.playDoorBellSound();
@@ -813,7 +875,6 @@
                 sounds.chatter.playing = false;
             }
             
-            sounds.jukebox.playing = false;
             sounds.doorbells.playing = false;
             sounds.outside.playing = false;
             
@@ -821,7 +882,6 @@
             setupDishesSound();
             setupGrillSound();
             setupChatterSound();
-            setupJukeboxSound();
             setupDoorbellsSound();
             setupOutsideSound();
             
@@ -866,6 +926,338 @@
             }
         }
         
+        // ---- Spotify Integration Functions ----
+        
+        // Show notification message
+        function showNotification(message) {
+            notification.textContent = message;
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+        
+        // Redirect to Spotify login
+        function authenticateWithSpotify() {
+            // This would normally be your app's client ID from Spotify Developer Dashboard
+            const clientId = 'YOUR_CLIENT_ID';
+            
+            // This should match the redirect URI registered in your Spotify app
+            const redirectUri = encodeURIComponent(window.location.origin + '/callback');
+            
+            // The scopes needed for the app
+            const scopes = encodeURIComponent('streaming user-read-email user-read-private user-read-playback-state user-modify-playback-state');
+            
+            // Generate a random state string for security
+            const state = Math.random().toString(36).substring(2, 15);
+            localStorage.setItem('spotify_auth_state', state);
+            
+            // Redirect to Spotify authorization page
+            const authUrl = `https://accounts.spotify.com/authorize?client_id=${clientId}&response_type=token&redirect_uri=${redirectUri}&scope=${scopes}&state=${state}`;
+            
+            // For demo purposes, we'll simulate the auth flow instead of redirecting
+            showNotification('In a real app, you would be redirected to Spotify login');
+            
+            // Simulate successful auth for demo purposes
+            simulateSuccessfulAuth();
+        }
+        
+        // In a real app, this would be handled by the redirect from Spotify
+        // Here we just simulate it for demo purposes
+        function simulateSuccessfulAuth() {
+            // Simulate a successful authentication
+            accessToken = 'simulated_access_token';
+            
+            // Show the player UI
+            spotifyLogin.style.display = 'none';
+            spotifyPlayer.style.display = 'block';
+            
+            // Initialize Spotify Web Playback SDK
+            initSpotifyPlayer();
+            
+            showNotification('Connected to Spotify (simulated)');
+        }
+        
+        // Initialize the Spotify Web Playback SDK
+        function initSpotifyPlayer() {
+            window.onSpotifyWebPlaybackSDKReady = () => {
+                player = new Spotify.Player({
+                    name: 'Diner Ambient Sounds Player',
+                    getOAuthToken: cb => { cb(accessToken); },
+                    volume: 0.5
+                });
+                
+                // Error handling
+                player.addListener('initialization_error', ({ message }) => {
+                    console.error('Initialization error:', message);
+                    showNotification('Spotify player initialization error');
+                });
+                
+                player.addListener('authentication_error', ({ message }) => {
+                    console.error('Authentication error:', message);
+                    showNotification('Spotify authentication error');
+                });
+                
+                player.addListener('account_error', ({ message }) => {
+                    console.error('Account error:', message);
+                    showNotification('Premium account required for playback');
+                });
+                
+                player.addListener('playback_error', ({ message }) => {
+                    console.error('Playback error:', message);
+                    showNotification('Spotify playback error');
+                });
+                
+                // Player state changed
+                player.addListener('player_state_changed', state => {
+                    if (state) {
+                        updatePlayerInfo(state);
+                    }
+                });
+                
+                // Ready
+                player.addListener('ready', ({ device_id }) => {
+                    console.log('Spotify Player Ready with Device ID:', device_id);
+                    deviceId = device_id;
+                    showNotification('Spotify player ready');
+                });
+                
+                // Not Ready
+                player.addListener('not_ready', ({ device_id }) => {
+                    console.log('Device ID has gone offline', device_id);
+                    showNotification('Spotify player disconnected');
+                });
+                
+                // Connect to the player
+                player.connect();
+            };
+            
+            // In a real implementation, the SDK would be loaded by the script tag
+            // Here we simulate it
+            simulateSpotifySDKLoaded();
+        }
+        
+        // For demo, simulate that the Spotify SDK loaded
+        function simulateSpotifySDKLoaded() {
+            // Create a mock Spotify Player for demo purposes
+            window.Spotify = {
+                Player: function(config) {
+                    this.config = config;
+                    this.listeners = {};
+                    
+                    this.addListener = function(event, callback) {
+                        this.listeners[event] = callback;
+                    };
+                    
+                    this.connect = function() {
+                        // Simulate successful connection
+                        setTimeout(() => {
+                            if (this.listeners.ready) {
+                                this.listeners.ready({ device_id: 'simulated_device_id' });
+                            }
+                        }, 1000);
+                    };
+                    
+                    this.togglePlay = function() {
+                        // Simulate toggling play state
+                        setTimeout(() => {
+                            showNotification('Play/Pause toggled');
+                        }, 500);
+                    };
+                    
+                    this.previousTrack = function() {
+                        // Simulate previous track
+                        setTimeout(() => {
+                            showNotification('Previous track');
+                        }, 500);
+                    };
+                    
+                    this.nextTrack = function() {
+                        // Simulate next track
+                        setTimeout(() => {
+                            showNotification('Next track');
+                        }, 500);
+                    };
+                    
+                    this.setVolume = function(volume) {
+                        // Simulate volume change
+                        setTimeout(() => {
+                            showNotification(`Volume set to ${Math.round(volume * 100)}%`);
+                        }, 300);
+                    };
+                }
+            };
+            
+            // Now trigger the SDK ready event
+            window.onSpotifyWebPlaybackSDKReady();
+        }
+        
+        // Update the player UI with current track info
+        function updatePlayerInfo(state) {
+            // In a real app, this would use actual state from Spotify
+            // For demo, we use simulated data
+            const trackInfo = {
+                name: 'Simulated Track',
+                artists: [{ name: 'Demo Artist' }],
+                album: {
+                    images: [{ url: '/api/placeholder/60/60' }]
+                }
+            };
+            
+            trackName.textContent = trackInfo.name;
+            trackArtist.textContent = trackInfo.artists[0].name;
+            trackArtwork.style.backgroundImage = `url(${trackInfo.album.images[0].url})`;
+        }
+        
+        // Search for tracks on Spotify
+        function searchSpotifyTracks(query) {
+            // In a real app, this would make an API call to Spotify
+            // For demo, we show sample results
+            
+            if (!query.trim()) {
+                searchResults.innerHTML = '<p>Please enter a search term</p>';
+                return;
+            }
+            
+            // Clear previous results
+            searchResults.innerHTML = '<p>Searching...</p>';
+            
+            // Simulate search delay
+            setTimeout(() => {
+                // Mock search results
+                const tracks = [
+                    { name: 'Rock Around the Clock', artist: 'Bill Haley & His Comets', id: 'track1' },
+                    { name: 'Jailhouse Rock', artist: 'Elvis Presley', id: 'track2' },
+                    { name: 'Johnny B. Goode', artist: 'Chuck Berry', id: 'track3' },
+                    { name: 'Great Balls of Fire', artist: 'Jerry Lee Lewis', id: 'track4' },
+                    { name: 'Tutti Frutti', artist: 'Little Richard', id: 'track5' }
+                ];
+                
+                // Filter by query for realistic behavior
+                const filteredTracks = tracks.filter(track => 
+                    track.name.toLowerCase().includes(query.toLowerCase()) || 
+                    track.artist.toLowerCase().includes(query.toLowerCase())
+                );
+                
+                if (filteredTracks.length === 0) {
+                    searchResults.innerHTML = '<p>No results found</p>';
+                    return;
+                }
+                
+                // Display results
+                searchResults.innerHTML = '';
+                filteredTracks.forEach(track => {
+                    const trackElement = document.createElement('div');
+                    trackElement.className = 'track-result';
+                    trackElement.style.padding = '8px';
+                    trackElement.style.margin = '5px 0';
+                    trackElement.style.borderRadius = '4px';
+                    trackElement.style.backgroundColor = '#f5f5f5';
+                    trackElement.style.cursor = 'pointer';
+                    
+                    trackElement.innerHTML = `
+                        <div><strong>${track.name}</strong></div>
+                        <div style="font-size: 0.8em; color: #666;">${track.artist}</div>
+                    `;
+                    
+                    trackElement.addEventListener('click', () => {
+                        playTrack(track.id);
+                    });
+                    
+                    searchResults.appendChild(trackElement);
+                });
+            }, 1000);
+        }
+        
+        // Play a specific track
+        function playTrack(trackId) {
+            // In a real app, this would make an API call to Spotify
+            showNotification(`Playing track: ${trackId}`);
+            
+            // Simulate track info update
+            setTimeout(() => {
+                // Get track info from mock data
+                let trackInfo;
+                
+                switch(trackId) {
+                    case 'track1':
+                        trackInfo = { name: 'Rock Around the Clock', artist: 'Bill Haley & His Comets' };
+                        break;
+                    case 'track2':
+                        trackInfo = { name: 'Jailhouse Rock', artist: 'Elvis Presley' };
+                        break;
+                    case 'track3':
+                        trackInfo = { name: 'Johnny B. Goode', artist: 'Chuck Berry' };
+                        break;
+                    case 'track4':
+                        trackInfo = { name: 'Great Balls of Fire', artist: 'Jerry Lee Lewis' };
+                        break;
+                    case 'track5':
+                        trackInfo = { name: 'Tutti Frutti', artist: 'Little Richard' };
+                        break;
+                    default:
+                        trackInfo = { name: 'Unknown Track', artist: 'Unknown Artist' };
+                }
+                
+                // Update player UI
+                trackName.textContent = trackInfo.name;
+                trackArtist.textContent = trackInfo.artist;
+            }, 500);
+        }
+        
+        // Set up event listeners for Spotify controls
+        function setupSpotifyControls() {
+            // Auth button
+            authButton.addEventListener('click', authenticateWithSpotify);
+            
+            // Playback controls
+            playButton.addEventListener('click', () => {
+                if (player) {
+                    player.togglePlay();
+                }
+            });
+            
+            pauseButton.addEventListener('click', () => {
+                if (player) {
+                    player.togglePlay();
+                }
+            });
+            
+            prevButton.addEventListener('click', () => {
+                if (player) {
+                    player.previousTrack();
+                }
+            });
+            
+            nextButton.addEventListener('click', () => {
+                if (player) {
+                    player.nextTrack();
+                }
+            });
+            
+            // Volume control
+            spotifyVolume.addEventListener('input', () => {
+                const volume = spotifyVolume.value / 100;
+                spotifyVolumeValue.textContent = `${spotifyVolume.value}%`;
+                
+                if (player) {
+                    player.setVolume(volume);
+                }
+            });
+            
+            // Search
+            searchButton.addEventListener('click', () => {
+                searchSpotifyTracks(searchInput.value);
+            });
+            
+            searchInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    searchSpotifyTracks(searchInput.value);
+                }
+            });
+        }
+        
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', () => {
             // Create initial UI state
@@ -881,6 +1273,9 @@
                 }
                 startSounds();
             });
+            
+            // Setup Spotify controls
+            setupSpotifyControls();
         });
     </script>
 </body>
